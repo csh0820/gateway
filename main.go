@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/csh0820/gateway/internal/gateway"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +11,7 @@ import (
 	"time"
 
 	"github.com/csh0820/gateway/config"
-	"github.com/csh0820/gateway/internal/discovery"
+	"github.com/csh0820/gateway/internal/gateway"
 	"github.com/csh0820/gateway/pkg/etcd"
 
 	"github.com/gin-gonic/gin"
@@ -25,10 +24,7 @@ func main() {
 	cli := etcd.NewEtcd()
 	defer cli.Close()
 
-	// discovery
-	discovery.NewEtcdRegistry(cli)
-
-	handler := gateway.NewGatewayHandler()
+	handler := gateway.NewGatewayHandler(cli)
 
 	if cfg.GatewayMode == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
@@ -52,7 +48,7 @@ func main() {
 	log.Println("gateway server start...")
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal("gateway server start failed:", err)
+			log.Fatalln("gateway server start failed:", err)
 		}
 	}()
 
@@ -66,8 +62,8 @@ func main() {
 	defer cancelShutdown()
 
 	if err := server.Shutdown(ctxShutdown); err != nil {
-		log.Fatal("gateway server shutdown failed:", err)
+		log.Fatalln("gateway server shutdown failed:", err)
+	} else {
+		log.Println("gateway server shutdown!")
 	}
-
-	log.Println("gateway server shutdown!")
 }
