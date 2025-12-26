@@ -1,0 +1,6 @@
+gateway_address: ":8080"
+gateway_mode: "release"
+
+etcd:
+  endpoints:
+    - "localhost:2379"
