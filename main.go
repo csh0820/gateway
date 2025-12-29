@@ -21,10 +21,12 @@ func main() {
 	// get config
 	cfg := config.GetConfig()
 
-	cli := etcd.NewEtcd()
-	defer cli.Close()
+	ctx := context.Background()
 
-	handler := gateway.NewGatewayHandler(cli)
+	cli := etcd.NewEtcdClient()
+	reg := etcd.New(cli)
+
+	gatewayHandler := gateway.NewGatewayHandler(reg)
 
 	if cfg.GatewayMode == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
@@ -37,7 +39,7 @@ func main() {
 	router.Use(gin.Recovery())
 
 	// 注册路由
-	router.Any("/*path", handler.HandleRequest)
+	router.Any("/*path", gateway.HandleRequest)
 
 	// 创建HTTP服务器
 	server := &http.Server{
@@ -56,6 +58,9 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+
+	// stop watch
+	watch.Stop()
 
 	// 设置关闭超时
 	ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), 20*time.Second)
